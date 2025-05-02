@@ -3,3 +3,6 @@ project_id = "jwgmrqizyovwvwbyapqp"
 
 [functions.analyze-food]
 verify_jwt = false
+
+[functions.generate-diet-plan]
+verify_jwt = false

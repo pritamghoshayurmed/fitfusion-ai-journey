@@ -1,4 +1,3 @@
-
 export type Gender = "male" | "female" | "other" | "prefer-not-to-say";
 
 export type FitnessGoal = 
@@ -68,4 +67,32 @@ export interface Exercise {
   reps?: number;
   duration?: number; // in minutes
   distance?: number; // in km
+}
+
+export interface DietPlan {
+  id?: string;
+  planName: string;
+  description: string;
+  targetCalories: number;
+  cuisine: string;
+  days: DietPlanDay[];
+  createdAt?: string;
+  userId?: string;
+}
+
+export interface DietPlanDay {
+  day: string;
+  meals: DietPlanMeal[];
+  totalCalories: number;
+}
+
+export interface DietPlanMeal {
+  name: string;
+  type: "breakfast" | "lunch" | "dinner" | "snack";
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  description: string;
+  completed?: boolean;
 }

@@ -56,6 +56,17 @@ serve(async (req) => {
 
     const data = await response.json();
 
+    if (!data.candidates || data.candidates.length === 0) {
+      console.error("Invalid response from Gemini API:", data);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to analyze food',
+          rawResponse: data
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      );
+    }
+
     // Extract the JSON from the response text
     let foodData = {};
     try {
