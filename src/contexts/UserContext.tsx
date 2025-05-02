@@ -5,6 +5,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
+// Define interface for Supabase profile to avoid type mismatches
+interface SupabaseProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  phone?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
 interface UserContextType {
   userProfile: UserProfile | null;
   trackingData: TrackingData[];
@@ -43,6 +54,33 @@ interface UserProviderProps {
   children: ReactNode;
 }
 
+// Function to convert UserProfile to SupabaseProfile format
+const userProfileToSupabaseProfile = (profile: UserProfile, email: string): SupabaseProfile => {
+  return {
+    id: profile.id!,
+    email: email,
+    full_name: profile.name,
+    role: 'user',
+    phone: null
+  };
+};
+
+// Function to convert SupabaseProfile to UserProfile format
+const supabaseProfileToUserProfile = (profile: SupabaseProfile): UserProfile => {
+  return {
+    id: profile.id,
+    name: profile.full_name,
+    age: 30, // Default values when converting from Supabase
+    gender: 'prefer-not-to-say',
+    height: 170,
+    weight: 70,
+    fitnessGoal: 'weight-loss',
+    dietaryPreference: 'omnivore',
+    location: '',
+    cuisinePreferences: []
+  };
+};
+
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [userProfile, setUserProfileState] = useState<UserProfile | null>(null);
   const [trackingData, setTrackingData] = useState<TrackingData[]>([]);
@@ -58,12 +96,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     
     if (user) {
       // If authenticated, update or create profile in Supabase
+      const supabaseProfile = userProfileToSupabaseProfile(profile, user.email || '');
+      
       const { error } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          ...profile
-        }, {
+        .upsert(supabaseProfile, {
           onConflict: 'id'
         });
       
@@ -83,9 +120,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       
       if (user) {
         // If authenticated, update profile in Supabase
+        // For updates, we need to map only the fields that are in the Supabase profile
+        const supabaseUpdates: Partial<SupabaseProfile> = {};
+        if (updates.name) supabaseUpdates.full_name = updates.name;
+        
         const { error } = await supabase
           .from('profiles')
-          .update(updates)
+          .update(supabaseUpdates)
           .eq('id', user.id);
         
         if (error) {
@@ -159,7 +200,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
               .single();
             
             if (data && !error) {
-              setUserProfileState(data as UserProfile);
+              const convertedProfile = supabaseProfileToUserProfile(data as SupabaseProfile);
+              setUserProfileState(convertedProfile);
             } else if (error && error.code !== 'PGRST116') {
               console.error("Error fetching user profile:", error);
             }
@@ -181,7 +223,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           .single()
           .then(({ data, error }) => {
             if (data && !error) {
-              setUserProfileState(data as UserProfile);
+              const convertedProfile = supabaseProfileToUserProfile(data as SupabaseProfile);
+              setUserProfileState(convertedProfile);
             }
           });
       }

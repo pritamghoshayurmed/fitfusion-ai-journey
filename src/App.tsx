@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { UserProvider } from "./contexts/UserContext";
 import Layout from "./components/Layout";
+import RouteGuard from "./components/RouteGuard";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
@@ -28,12 +29,12 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<Layout><Dashboard /></Layout>} />
+            <Route path="/" element={<RouteGuard><Layout><Dashboard /></Layout></RouteGuard>} />
             <Route path="/profile" element={<Layout><Profile /></Layout>} />
-            <Route path="/diet" element={<Layout><DietPlan /></Layout>} />
-            <Route path="/workouts" element={<Layout><Workouts /></Layout>} />
-            <Route path="/tracker" element={<Layout><Tracker /></Layout>} />
-            <Route path="/camera" element={<Layout><AICamera /></Layout>} />
+            <Route path="/diet" element={<RouteGuard><Layout><DietPlan /></Layout></RouteGuard>} />
+            <Route path="/workouts" element={<RouteGuard><Layout><Workouts /></Layout></RouteGuard>} />
+            <Route path="/tracker" element={<RouteGuard><Layout><Tracker /></Layout></RouteGuard>} />
+            <Route path="/camera" element={<RouteGuard><Layout><AICamera /></Layout></RouteGuard>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

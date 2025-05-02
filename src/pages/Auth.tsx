@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useUser } from '@/contexts/UserContext';
 import { UserProfile } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -52,7 +53,19 @@ const Auth = () => {
           .single();
           
         if (profileData) {
-          setUserProfile(profileData as UserProfile);
+          // Convert Supabase profile to app UserProfile format
+          const userProfile: UserProfile = {
+            id: profileData.id,
+            name: profileData.full_name,
+            age: 30, // Default values
+            gender: 'prefer-not-to-say',
+            height: 170,
+            weight: 70,
+            fitnessGoal: 'weight-loss',
+            dietaryPreference: 'omnivore'
+          };
+          
+          setUserProfile(userProfile);
         }
         
         toast.success('Logged in successfully!');
@@ -82,7 +95,7 @@ const Auth = () => {
         password,
         options: {
           data: {
-            name,
+            full_name: name,
           },
         },
       });
@@ -93,9 +106,20 @@ const Auth = () => {
       
       // Create initial profile
       if (data.user) {
+        // Create a Supabase profile
+        await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            full_name: name,
+            email: email,
+            role: 'user',
+          });
+        
+        // Create app user profile
         const initialProfile: UserProfile = {
           id: data.user.id,
-          name,
+          name: name,
           age: 30,
           gender: 'prefer-not-to-say',
           height: 170,
@@ -103,10 +127,6 @@ const Auth = () => {
           fitnessGoal: 'weight-loss',
           dietaryPreference: 'omnivore'
         };
-        
-        await supabase
-          .from('profiles')
-          .insert(initialProfile);
         
         setUserProfile(initialProfile);
       }
