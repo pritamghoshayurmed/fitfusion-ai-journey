@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, TrendingUp, Droplet, Circle } from 'lucide-react';
+import { Plus, TrendingUp, Droplet, Circle, Camera, Dumbbell, Utensils } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 
 const Dashboard = () => {
@@ -170,7 +170,7 @@ const Dashboard = () => {
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-fitfusion-softPurple hover:bg-fitfusion-softPurple/80 cursor-pointer transition-all" onClick={() => navigate('/diet')}>
           <CardContent className="flex flex-col items-center justify-center p-6">
-            <Salad className="h-10 w-10 text-fitfusion-purple mb-2" />
+            <Utensils className="h-10 w-10 text-fitfusion-purple mb-2" />
             <h3 className="font-semibold text-center">Log Food</h3>
           </CardContent>
         </Card>
