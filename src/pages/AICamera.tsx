@@ -4,12 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/contexts/UserContext';
-import { Camera, Upload, AlertCircle } from 'lucide-react';
+import { Camera, Upload, AlertCircle, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
+
+// Define the Gemini API key
+const GEMINI_API_KEY = "AIzaSyDl4xzZEbn7xdh8j3b8A3ALLty30oI1Txg";
 
 const AICamera = () => {
   const navigate = useNavigate();
-  const { isProfileComplete } = useUser();
+  const { isProfileComplete, isAuthenticated, user } = useUser();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<null | {
@@ -19,6 +24,35 @@ const AICamera = () => {
     carbs: number;
     fat: number;
   }>(null);
+  const [recentScans, setRecentScans] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    // Fetch recent food scans if user is authenticated
+    if (isAuthenticated && user) {
+      fetchRecentScans();
+    }
+  }, [isAuthenticated, user]);
+
+  const fetchRecentScans = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('food_entries')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (error) throw error;
+      
+      if (data) {
+        setRecentScans(data);
+      }
+    } catch (error: any) {
+      console.error('Error fetching recent scans:', error);
+    }
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -36,26 +70,90 @@ const AICamera = () => {
     }
   };
 
-  const handleAnalyzeImage = () => {
+  const handleAnalyzeImage = async () => {
     if (!selectedImage) return;
     
     setIsAnalyzing(true);
     
-    // Simulate API call with timeout
-    setTimeout(() => {
-      // Fake result (in a real app, this would come from the AI model)
-      setResult({
-        name: "Grilled Salmon Salad",
-        calories: 320,
-        protein: 28,
-        carbs: 12,
-        fat: 18
+    try {
+      // Call the Supabase Edge Function to analyze the food
+      const response = await supabase.functions.invoke('analyze-food', {
+        body: {
+          image: selectedImage,
+          apiKey: GEMINI_API_KEY
+        }
       });
       
-      setIsAnalyzing(false);
+      if (response.error) {
+        throw new Error(response.error.message || 'Error analyzing image');
+      }
+      
+      const foodData = response.data;
+      setResult(foodData);
       toast.success("Food analyzed successfully!");
-    }, 2000);
+    } catch (error: any) {
+      console.error('Error analyzing image:', error);
+      toast.error(error.message || 'Failed to analyze image');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
+
+  const handleSaveToFoodDiary = async () => {
+    if (!result) return;
+    if (!user) {
+      toast.error('You must be logged in to save to your food diary');
+      return;
+    }
+    
+    try {
+      // Save to Supabase
+      const { error } = await supabase
+        .from('food_entries')
+        .insert({
+          user_id: user.id,
+          food_name: result.name,
+          calories: result.calories,
+          protein: result.protein,
+          carbs: result.carbs,
+          fat: result.fat,
+          image_url: selectedImage
+        });
+      
+      if (error) throw error;
+      
+      toast.success('Food logged successfully');
+      
+      // Update the recent scans
+      fetchRecentScans();
+      
+      // Reset the form
+      setSelectedImage(null);
+      setResult(null);
+    } catch (error: any) {
+      console.error('Error saving food entry:', error);
+      toast.error(error.message || 'Failed to save food entry');
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6 p-4">
+        <div className="text-center max-w-md">
+          <h2 className="text-2xl font-bold mb-3">Authentication Required</h2>
+          <p className="text-gray-600 mb-6">
+            Please log in or sign up to use the AI Camera feature.
+          </p>
+          <Button 
+            onClick={() => navigate('/auth')}
+            className="bg-fitfusion-purple hover:bg-purple-600"
+          >
+            Log In / Sign Up
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!isProfileComplete) {
     return (
@@ -158,7 +256,7 @@ const AICamera = () => {
               
               <div className="text-center text-sm text-gray-500 flex items-center justify-center">
                 <AlertCircle className="h-4 w-4 mr-1" />
-                This is a simulated feature. In a real implementation, it would use Gemini Pro Vision API.
+                Using Gemini Pro Vision API to analyze food images
               </div>
             </div>
           </CardContent>
@@ -210,14 +308,10 @@ const AICamera = () => {
                 
                 <div className="pt-4 mt-6 border-t">
                   <Button 
-                    className="w-full"
-                    variant="outline"
-                    onClick={() => {
-                      toast.success("Food logged successfully");
-                      setSelectedImage(null);
-                      setResult(null);
-                    }}
+                    className="w-full bg-fitfusion-purple hover:bg-purple-600"
+                    onClick={handleSaveToFoodDiary}
                   >
+                    <Save className="mr-2 h-4 w-4" />
                     Add to Food Diary
                   </Button>
                 </div>
@@ -243,10 +337,39 @@ const AICamera = () => {
             <CardTitle>Recent Scans</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <p className="text-gray-500">No recent scans</p>
-              <p className="text-sm text-gray-400 mt-1">Your scanned foods will appear here</p>
-            </div>
+            {recentScans.length > 0 ? (
+              <div className="divide-y">
+                {recentScans.map((scan) => (
+                  <div key={scan.id} className="py-4 flex items-center space-x-4">
+                    <div className="h-12 w-12 rounded overflow-hidden flex-shrink-0">
+                      {scan.image_url ? (
+                        <img src={scan.image_url} alt={scan.food_name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full bg-gray-200 flex items-center justify-center">
+                          <Camera className="h-6 w-6 text-gray-500" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-grow">
+                      <h4 className="font-medium">{scan.food_name}</h4>
+                      <p className="text-sm text-gray-500">
+                        {new Date(scan.created_at).toLocaleDateString()} • {scan.calories} kcal
+                      </p>
+                    </div>
+                    <div className="text-right text-sm">
+                      <div>P: {scan.protein}g</div>
+                      <div>C: {scan.carbs}g</div>
+                      <div>F: {scan.fat}g</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-gray-500">No recent scans</p>
+                <p className="text-sm text-gray-400 mt-1">Your scanned foods will appear here</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -120,6 +120,42 @@ export type Database = {
           },
         ]
       }
+      food_entries: {
+        Row: {
+          calories: number | null
+          carbs: number | null
+          created_at: string | null
+          fat: number | null
+          food_name: string
+          id: string
+          image_url: string | null
+          protein: number | null
+          user_id: string | null
+        }
+        Insert: {
+          calories?: number | null
+          carbs?: number | null
+          created_at?: string | null
+          fat?: number | null
+          food_name: string
+          id?: string
+          image_url?: string | null
+          protein?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          calories?: number | null
+          carbs?: number | null
+          created_at?: string | null
+          fat?: number | null
+          food_name?: string
+          id?: string
+          image_url?: string | null
+          protein?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -338,6 +374,36 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      workout_history: {
+        Row: {
+          calories_burned: number | null
+          completed_at: string | null
+          duration: number | null
+          id: string
+          notes: string | null
+          user_id: string | null
+          workout_id: string
+        }
+        Insert: {
+          calories_burned?: number | null
+          completed_at?: string | null
+          duration?: number | null
+          id?: string
+          notes?: string | null
+          user_id?: string | null
+          workout_id: string
+        }
+        Update: {
+          calories_burned?: number | null
+          completed_at?: string | null
+          duration?: number | null
+          id?: string
+          notes?: string | null
+          user_id?: string | null
+          workout_id?: string
         }
         Relationships: []
       }

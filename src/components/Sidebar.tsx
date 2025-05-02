@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   Home, 
   Salad, 
@@ -9,11 +9,14 @@ import {
   Camera, 
   User,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/contexts/UserContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface NavItemProps {
   to: string;
@@ -44,7 +47,8 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon: Icon, label, onClick }) => 
 const Sidebar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const isMobile = useIsMobile();
-  const { userProfile } = useUser();
+  const { userProfile, isAuthenticated, signOut } = useUser();
+  const navigate = useNavigate();
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
@@ -53,6 +57,21 @@ const Sidebar: React.FC = () => {
   const closeSidebar = () => {
     if (isMobile) {
       setIsOpen(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+    toast.success("You have been signed out");
+  };
+
+  const handleProfileClick = () => {
+    closeSidebar();
+    if (!isAuthenticated) {
+      navigate('/auth');
+    } else {
+      navigate('/profile');
     }
   };
 
@@ -94,25 +113,50 @@ const Sidebar: React.FC = () => {
         </div>
 
         <div className="p-5 border-t">
-          <NavLink 
-            to="/profile" 
-            className="flex items-center p-2 rounded-lg"
-            onClick={closeSidebar}
-          >
-            <div className="w-10 h-10 bg-fitfusion-softPurple text-fitfusion-purple rounded-full flex items-center justify-center mr-3">
-              <User size={20} />
+          {isAuthenticated ? (
+            <div className="space-y-3">
+              <div 
+                className="flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-100"
+                onClick={handleProfileClick}
+              >
+                <div className="w-10 h-10 bg-fitfusion-softPurple text-fitfusion-purple rounded-full flex items-center justify-center mr-3">
+                  <User size={20} />
+                </div>
+                <div>
+                  <p className="font-medium">
+                    {userProfile?.name || "My Profile"}
+                  </p>
+                  {userProfile && (
+                    <p className="text-xs text-gray-500">
+                      {userProfile.fitnessGoal.replace('-', ' ')}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                className="w-full flex items-center justify-center"
+                onClick={handleSignOut}
+              >
+                <LogOut size={16} className="mr-2" />
+                Sign Out
+              </Button>
             </div>
-            <div>
-              <p className="font-medium">
-                {userProfile?.name || "Create Profile"}
-              </p>
-              {userProfile && (
-                <p className="text-xs text-gray-500">
-                  {userProfile.fitnessGoal.replace('-', ' ')}
-                </p>
-              )}
+          ) : (
+            <div
+              className="flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-100"
+              onClick={handleProfileClick}
+            >
+              <div className="w-10 h-10 bg-fitfusion-softPurple text-fitfusion-purple rounded-full flex items-center justify-center mr-3">
+                <User size={20} />
+              </div>
+              <div>
+                <p className="font-medium">Sign In / Sign Up</p>
+                <p className="text-xs text-gray-500">Create an account</p>
+              </div>
             </div>
-          </NavLink>
+          )}
         </div>
       </div>
 
